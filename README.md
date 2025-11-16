@@ -1,4 +1,4 @@
-# asciinema
+# asciinema (Sekuso fork)
 
 [![Build Status](https://github.com/asciinema/asciinema/actions/workflows/ci.yml/badge.svg)](https://github.com/asciinema/asciinema/actions/workflows/asciinema.yml)
 [![license](http://img.shields.io/badge/license-GNU-blue.svg)](https://raw.githubusercontent.com/asciinema/asciinema/master/LICENSE)
@@ -82,7 +82,7 @@ binary with:
 ```sh
 git clone https://github.com/asciinema/asciinema
 cd asciinema
-cargo build --release
+cargo build --features no-internet --release # disable internet-connected features using --features no-internet
 ```
 
 This produces the binary at `target/release/asciinema`. You can just copy the

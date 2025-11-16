@@ -8,6 +8,7 @@ mod encoder;
 mod fd;
 mod file_writer;
 mod forwarder;
+mod no_internet;
 mod hash;
 mod html;
 mod leb128;

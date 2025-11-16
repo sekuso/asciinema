@@ -58,4 +58,5 @@ lto = true
 codegen-units = 1
 
 [features]
-macos-tty = []
+# When enabled, network-facing functionality is disabled / stubbed out.
+no-internet = []

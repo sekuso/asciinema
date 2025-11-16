@@ -2,22 +2,45 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail};
-use reqwest::Url;
 use tempfile::NamedTempFile;
 
 use crate::html;
 
+#[cfg(not(feature = "no-internet"))]
+use reqwest::Url;
+
+#[cfg(feature = "no-internet")]
+use crate::no_internet;
+
 pub fn get_local_path(filename: &str) -> anyhow::Result<Box<dyn AsRef<Path>>> {
     if filename.starts_with("https://") || filename.starts_with("http://") {
-        match download_asciicast(filename) {
-            Ok(path) => Ok(Box::new(path)),
-            Err(e) => bail!(anyhow!("download failed: {e}")),
+        // no-internet build: fail early
+        #[cfg(feature = "no-internet")]
+        {
+            return Err(no_internet::disabled().into());
+        }
+
+        // network-enabled build: download the remote asciicast into a temp file
+        #[cfg(not(feature = "no-internet"))]
+        {
+            match download_asciicast(filename) {
+                Ok(path) => Ok(Box::new(path)),
+                Err(e) => bail!(anyhow!("download failed: {e}")),
+            }
         }
     } else {
         Ok(Box::new(PathBuf::from(filename)))
     }
 }
 
+// keep the no-internet stub (optional)
+#[cfg(feature = "no-internet")]
+pub fn fetch_remote_to_tmp(_url: &str) -> anyhow::Result<std::path::PathBuf> {
+    // In no-internet builds, downloading remote resources is disabled.
+    Err(no_internet::disabled().into())
+}
+
+#[cfg(not(feature = "no-internet"))]
 fn download_asciicast(url: &str) -> anyhow::Result<NamedTempFile> {
     use reqwest::blocking::get;
 

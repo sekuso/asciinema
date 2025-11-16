@@ -107,14 +107,25 @@ impl cli::Session {
             ))
         });
 
+        #[cfg(not(feature = "no-internet"))]
         let forwarder = relay.map(|relay| {
             tokio::spawn(forwarder::forward(
-                relay.ws_producer_url,
+                relay,
                 stream.subscriber(),
                 notifier.clone(),
                 shutdown_token.clone(),
             ))
         });
+
+        #[cfg(feature = "no-internet")]
+        let forwarder: Option<tokio::task::JoinHandle<()>> = {
+            // check the actual Session field for remote forwarding
+            if self.stream_remote.is_some() {
+                // Inform user that forwarding/remote streaming is disabled in this build.
+                eprintln!("forwarding/remote streaming disabled (no-internet build)");
+            }
+            None
+        };
 
         if server.is_some() || forwarder.is_some() {
             let output = stream.start(&metadata).await;
