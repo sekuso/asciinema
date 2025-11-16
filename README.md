@@ -82,7 +82,7 @@ binary with:
 ```sh
 git clone https://github.com/asciinema/asciinema
 cd asciinema
-cargo build --features no-internet --release # disable internet-connected features using --features no-internet
+cargo build --features no-internet --release --target x86_64-unknown-linux-musl # disable internet-connected features using --features no-internet
 ```
 
 This produces the binary at `target/release/asciinema`. You can just copy the
