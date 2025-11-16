@@ -3,8 +3,12 @@ use std::env;
 use std::fmt::Debug;
 
 use anyhow::{bail, Context, Result};
+#[cfg(not(feature = "no-internet"))]
 use reqwest::{header, Response};
+#[cfg(not(feature = "no-internet"))]
 use reqwest::{multipart::Form, Client, RequestBuilder};
+#[cfg(feature = "no-internet")]
+use crate::no_internet;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -52,6 +56,7 @@ pub fn get_auth_url(config: &mut Config) -> Result<Url> {
     Ok(url)
 }
 
+#[cfg(not(feature = "no-internet"))]
 pub async fn create_recording(path: &str, config: &mut Config) -> Result<RecordingResponse> {
     let server_url = &config.get_server_url()?;
     let install_id = config.get_install_id()?;
@@ -78,6 +83,12 @@ pub async fn create_recording(path: &str, config: &mut Config) -> Result<Recordi
     Ok(response.json::<RecordingResponse>().await?)
 }
 
+#[cfg(feature = "no-internet")]
+pub async fn create_recording(_path: &str, _config: &mut Config) -> Result<RecordingResponse> {
+    Err(no_internet::disabled().into())
+}
+
+#[cfg(not(feature = "no-internet"))]
 async fn create_recording_request(
     server_url: &Url,
     path: &str,
@@ -92,6 +103,7 @@ async fn create_recording_request(
     Ok(add_headers(builder, &install_id))
 }
 
+#[cfg(not(feature = "no-internet"))]
 pub async fn list_user_streams(prefix: &str, config: &mut Config) -> Result<Vec<StreamResponse>> {
     let server_url = config.get_server_url()?;
     let install_id = config.get_install_id()?;
@@ -104,6 +116,12 @@ pub async fn list_user_streams(prefix: &str, config: &mut Config) -> Result<Vec<
     parse_stream_response(response, &server_url).await
 }
 
+#[cfg(feature = "no-internet")]
+pub async fn list_user_streams(_prefix: &str, _config: &mut Config) -> Result<Vec<StreamResponse>> {
+    Err(no_internet::disabled().into())
+}
+
+#[cfg(not(feature = "no-internet"))]
 fn list_user_streams_request(server_url: &Url, prefix: &str, install_id: &str) -> RequestBuilder {
     let client = Client::new();
     let mut url = server_url.clone();
@@ -113,6 +131,7 @@ fn list_user_streams_request(server_url: &Url, prefix: &str, install_id: &str) -
     add_headers(client.get(url), install_id)
 }
 
+#[cfg(not(feature = "no-internet"))]
 pub async fn create_stream(
     changeset: StreamChangeset,
     config: &mut Config,
@@ -128,6 +147,15 @@ pub async fn create_stream(
     parse_stream_response(response, &server_url).await
 }
 
+#[cfg(feature = "no-internet")]
+pub async fn create_stream(
+    _changeset: StreamChangeset,
+    _config: &mut Config,
+) -> Result<StreamResponse> {
+    Err(no_internet::disabled().into())
+}
+
+#[cfg(not(feature = "no-internet"))]
 fn create_stream_request(
     server_url: &Url,
     install_id: &str,
@@ -142,6 +170,7 @@ fn create_stream_request(
     builder.json(&changeset)
 }
 
+#[cfg(not(feature = "no-internet"))]
 pub async fn update_stream(
     stream_id: u64,
     changeset: StreamChangeset,
@@ -158,6 +187,16 @@ pub async fn update_stream(
     parse_stream_response(response, &server_url).await
 }
 
+#[cfg(feature = "no-internet")]
+pub async fn update_stream(
+    _stream_id: u64,
+    _changeset: StreamChangeset,
+    _config: &mut Config,
+) -> Result<StreamResponse> {
+    Err(no_internet::disabled().into())
+}
+
+#[cfg(not(feature = "no-internet"))]
 fn update_stream_request(
     server_url: &Url,
     install_id: &str,
@@ -173,6 +212,7 @@ fn update_stream_request(
     builder.json(&changeset)
 }
 
+#[cfg(not(feature = "no-internet"))]
 async fn parse_stream_response<T: DeserializeOwned>(
     response: Response,
     server_url: &Url,
@@ -202,6 +242,7 @@ async fn parse_stream_response<T: DeserializeOwned>(
     response.json::<T>().await.map_err(|e| e.into())
 }
 
+#[cfg(not(feature = "no-internet"))]
 fn add_headers(builder: RequestBuilder, install_id: &str) -> RequestBuilder {
     builder
         .basic_auth(get_username(), Some(install_id))
@@ -222,4 +263,10 @@ pub fn build_user_agent() -> String {
     );
 
     ua.to_owned()
+}
+
+#[cfg(feature = "no-internet")]
+pub fn upload_cast<T>(_path: &str) -> anyhow::Result<T> {
+    // stub: compilation succeeds but runtime returns an error if used.
+    Err(no_internet::disabled().into())
 }
